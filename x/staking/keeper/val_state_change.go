@@ -128,6 +128,7 @@ func (k Keeper) BlockValidatorUpdates(ctx context.Context) ([]abci.ValidatorUpda
 // at the previous block height or were removed from the validator set entirely
 // are returned to CometBFT.
 func (k Keeper) ApplyAndReturnValidatorSetUpdates(ctx context.Context) (updates []abci.ValidatorUpdate, err error) {
+	fmt.Println("Acquiring custom logs beep boop")
 	params, err := k.GetParams(ctx)
 	if err != nil {
 		return nil, err
@@ -165,12 +166,15 @@ func (k Keeper) ApplyAndReturnValidatorSetUpdates(ctx context.Context) (updates 
 		// if we get to a zero-power validator (which we don't bond),
 		// there are no more possible bonded validators
 		if validator.PotentialConsensusPower(k.PowerReduction(ctx)) == 0 {
+			fmt.Println("potential consensus power of power reduction is 0")
+			fmt.Println(validator.String())
 			break
 		}
 
 		// apply the appropriate state change if necessary
 		switch {
 		case validator.IsUnbonded():
+			fmt.Printf("validator is unbonded, bonding %s\n", validator.String())
 			validator, err = k.unbondedToBonded(ctx, validator)
 			if err != nil {
 				return
@@ -198,6 +202,8 @@ func (k Keeper) ApplyAndReturnValidatorSetUpdates(ctx context.Context) (updates 
 		newPowerBytes := k.cdc.MustMarshal(&gogotypes.Int64Value{Value: newPower})
 
 		// update the validator set if power has changed
+		fmt.Printf("validator power changed, old power: %v, new power: %v\n", oldPowerBytes, newPowerBytes)
+		fmt.Printf("validator found value: %v\n", found)
 		if !found || !bytes.Equal(oldPowerBytes, newPowerBytes) {
 			updates = append(updates, validator.ABCIValidatorUpdate(powerReduction))
 
@@ -255,6 +261,7 @@ func (k Keeper) ApplyAndReturnValidatorSetUpdates(ctx context.Context) (updates 
 	}
 
 	// set total power on lookup index if there are any updates
+	fmt.Printf("update length: %v\n", len(updates))
 	if len(updates) > 0 {
 		if err = k.SetLastTotalPower(ctx, totalPower); err != nil {
 			return nil, err
@@ -266,6 +273,9 @@ func (k Keeper) ApplyAndReturnValidatorSetUpdates(ctx context.Context) (updates 
 		return nil, err
 	}
 
+	for _, update := range updates {
+		fmt.Printf("validator update: %v\n", update.String())
+	}
 	return updates, err
 }
 
