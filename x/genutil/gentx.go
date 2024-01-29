@@ -112,7 +112,6 @@ func DeliverGenTxs(
 	}
 
 	resp, err := stakingKeeper.ApplyAndReturnValidatorSetUpdates(ctx)
-	ctx.Logger().Info("error %s", err.Error())
 	ctx.Logger().Info("validator updates genutil %s", len(resp))
 	for _, v := range resp {
 		ctx.Logger().Info("validator updates genutil %s, %d", v.PubKey.String(), v.Power)
